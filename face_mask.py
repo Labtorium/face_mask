@@ -75,19 +75,9 @@ while True:
     face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
     for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-        matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.5)
+        matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.6)
         face_id = None
 
-        '''
-        if True in matches:
-            idx = matches.index(True)
-            face_id = known_face_ids[idx]
-        else:
-            face_id = str(uuid.uuid4())  # 新規ID
-            known_face_encodings.append(face_encoding)
-            known_face_ids.append(face_id)
-            face_id_to_char_index[face_id] = len(face_id_to_char_index) % len(character_images)
-        '''
         if True in matches:
             idx = matches.index(True)
             face_id = known_face_ids[idx]
@@ -115,19 +105,6 @@ while True:
 
         char_img = character_images[face_id_to_char_index[face_id]]
         overlay_character(frame, char_img, (top, right, bottom, left), scale=2.0)
-        '''
-        char_resized = cv2.resize(char_img, (w, h))
-
-        # アルファ合成
-        if char_resized.shape[2] == 4:
-            alpha_s = char_resized[:, :, 3] / 255.0
-            alpha_l = 1.0 - alpha_s
-            for c in range(3):
-                frame[top:bottom, left:right, c] = (alpha_s * char_resized[:, :, c] +
-                                                    alpha_l * frame[top:bottom, left:right, c])
-        else:
-            frame[top:bottom, left:right] = char_resized
-        '''
 
     # 背景フレーム
     alpha_s = background_frame[:, :, 3] / 255.0
