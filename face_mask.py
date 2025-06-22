@@ -40,7 +40,7 @@ def overlay_character(frame, char_img, face_box, scale=1.5):
 
 
 # キャラクター画像の読み込み
-character_dir = 'characters'
+character_dir = 'boonboon'
 character_images = [
     cv2.imread(os.path.join(character_dir, f), cv2.IMREAD_UNCHANGED)
     for f in sorted(os.listdir(character_dir)) if f.lower().endswith(('.png', '.jpg'))
@@ -104,7 +104,7 @@ while True:
         w, h = right - left, bottom - top
 
         char_img = character_images[face_id_to_char_index[face_id]]
-        overlay_character(frame, char_img, (top, right, bottom, left), scale=2.0)
+        overlay_character(frame, char_img, (top, right, bottom, left), scale=1.5)
 
     # 背景フレーム
     alpha_s = background_frame[:, :, 3] / 255.0
