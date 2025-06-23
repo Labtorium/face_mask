@@ -50,7 +50,7 @@ if not character_images:
 random.shuffle(character_images)
 
 # 背景画像の読み込み
-background_frame = cv2.imread('background/background.png', cv2.IMREAD_UNCHANGED)
+background_frame = cv2.imread(character_dir + '/background/background.png', cv2.IMREAD_UNCHANGED)
 if background_frame is None:
     raise Exception("背景画像が読み込めませんでした！backgroundフォルダに画像を入れてください。")
 
