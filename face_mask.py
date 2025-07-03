@@ -37,13 +37,15 @@ def overlay_character(frame, char_img, face_box, scale=1.5):
         frame[y1:y2, x1:x2] = char_resized[char_y1:char_y2, char_x1:char_x2]
 
 # キャラクター画像の読み込み
-character_dir = 'animals'
+character_dir = 'boonboon'
 character_images = [
     cv2.imread(os.path.join(character_dir, f), cv2.IMREAD_UNCHANGED)
     for f in sorted(os.listdir(character_dir)) if f.lower().endswith(('.png', '.jpg'))
 ]
 if not character_images:
     raise Exception("キャラクター画像が読み込めません")
+# キャラクター画像のシャッフル
+random.shuffle(character_images)
 
 # 背景画像の読み込み
 background_frame = cv2.imread(os.path.join(character_dir, 'background/background.png'), cv2.IMREAD_UNCHANGED)
@@ -148,7 +150,7 @@ while True:
         left *= 2
 
         char_img = character_images[char_index]
-        overlay_character(frame, char_img, (top, right, bottom, left), scale=1.5)
+        overlay_character(frame, char_img, (top, right, bottom, left), scale=1.8)
 
     # 古いデータを破棄して更新
     tracked_faces = {
