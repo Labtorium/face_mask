@@ -37,7 +37,7 @@ def overlay_character(frame, char_img, face_box, scale=1.5):
         frame[y1:y2, x1:x2] = char_resized[char_y1:char_y2, char_x1:char_x2]
 
 # キャラクター画像の読み込み
-character_dir = 'boonboon'
+character_dir = 'aipri'
 character_images = [
     cv2.imread(os.path.join(character_dir, f), cv2.IMREAD_UNCHANGED)
     for f in sorted(os.listdir(character_dir)) if f.lower().endswith(('.png', '.jpg'))
@@ -57,6 +57,14 @@ tracked_faces = {}
 ID_TIMEOUT = 3.0  # 秒以内は同一人物とみなす
 
 cap = cv2.VideoCapture(0)
+#cap.set(cv2.CAP_PROP_FPS, 60)
+#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
+#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 2160)
+width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+fps = cap.get(cv2.CAP_PROP_FPS)
+print(f"解像度: {int(width)} x {int(height)}")
+print(f"フレームレート: {fps:.2f} FPS")
 
 while True:
     ret, frame = cap.read()
@@ -150,7 +158,7 @@ while True:
         left *= 2
 
         char_img = character_images[char_index]
-        overlay_character(frame, char_img, (top, right, bottom, left), scale=1.8)
+        overlay_character(frame, char_img, (top, right, bottom, left), scale=2.0)
 
     # 古いデータを破棄して更新
     tracked_faces = {
