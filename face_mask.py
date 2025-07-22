@@ -37,7 +37,7 @@ def overlay_character(frame, char_img, face_box, scale=1.5):
         frame[y1:y2, x1:x2] = char_resized[char_y1:char_y2, char_x1:char_x2]
 
 # キャラクター画像の読み込み
-character_dir = 'aipri'
+character_dir = 'onepiece'
 character_images = [
     cv2.imread(os.path.join(character_dir, f), cv2.IMREAD_UNCHANGED)
     for f in sorted(os.listdir(character_dir)) if f.lower().endswith(('.png', '.jpg'))
