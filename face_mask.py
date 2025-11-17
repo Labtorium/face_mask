@@ -5,6 +5,13 @@ import numpy as np
 import os
 import time
 
+BASE_RES_WIDTH = 1920
+BASE_RES_HEIGHT = 1080
+CAM_RES_WIDTH = 3840
+CAM_RES_HEIGHT = 2160
+CAM_FPS = 30
+SCALE_RATIO = int(2 * CAM_RES_WIDTH / BASE_RES_WIDTH)
+
 def overlay_character(frame, char_img, face_box, scale=1.5):
     top, right, bottom, left = face_box
     w, h = right - left, bottom - top
@@ -37,7 +44,7 @@ def overlay_character(frame, char_img, face_box, scale=1.5):
         frame[y1:y2, x1:x2] = char_resized[char_y1:char_y2, char_x1:char_x2]
 
 # キャラクター画像の読み込み
-character_dir = 'onepiece'
+character_dir = 'aipri'
 character_images = [
     cv2.imread(os.path.join(character_dir, f), cv2.IMREAD_UNCHANGED)
     for f in sorted(os.listdir(character_dir)) if f.lower().endswith(('.png', '.jpg'))
@@ -51,15 +58,16 @@ random.shuffle(character_images)
 background_frame = cv2.imread(os.path.join(character_dir, 'background/background.png'), cv2.IMREAD_UNCHANGED)
 if background_frame is None:
     raise Exception("背景画像が読み込めません")
+background_frame = cv2.resize(background_frame, (CAM_RES_WIDTH, CAM_RES_HEIGHT))
 
 # トラッキング辞書: face_id -> (encoding, char_index, last_seen_time)
 tracked_faces = {}
 ID_TIMEOUT = 3.0  # 秒以内は同一人物とみなす
 
 cap = cv2.VideoCapture(0)
-#cap.set(cv2.CAP_PROP_FPS, 60)
-#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
-#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 2160)
+cap.set(cv2.CAP_PROP_FPS, CAM_FPS)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAM_RES_WIDTH)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAM_RES_HEIGHT)
 width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -71,7 +79,7 @@ while True:
     if not ret:
         break
 
-    small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+    small_frame = cv2.resize(frame, (0, 0), fx=1/SCALE_RATIO, fy=1/SCALE_RATIO)
     rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
     face_locations = face_recognition.face_locations(rgb_small_frame)
@@ -152,10 +160,10 @@ while True:
         new_tracked_faces[face_id] = (face_encoding, char_index, current_time)
 
         top, right, bottom, left = face_locations[j]
-        top *= 2
-        right *= 2
-        bottom *= 2
-        left *= 2
+        top *= SCALE_RATIO
+        right *= SCALE_RATIO
+        bottom *= SCALE_RATIO
+        left *= SCALE_RATIO
 
         char_img = character_images[char_index]
         overlay_character(frame, char_img, (top, right, bottom, left), scale=2.0)
