@@ -5,14 +5,15 @@ import numpy as np
 import os
 import time
 
-BASE_RES_WIDTH = 1920
-BASE_RES_HEIGHT = 1080
-CAM_RES_WIDTH = 3840
-CAM_RES_HEIGHT = 2160
+#CAM_RES_WIDTH = 3840
+#CAM_RES_HEIGHT = 2160
+CAM_RES_WIDTH = 1920
+CAM_RES_HEIGHT = 1080
 CAM_FPS = 30
-SCALE_RATIO = int(2 * CAM_RES_WIDTH / BASE_RES_WIDTH)
+SCALE_RATIO = 4
+CHARACTER_SCALE_RATIO = 2
 
-def overlay_character(frame, char_img, face_box, scale=1.5):
+def overlay_character(frame, char_img, face_box, scale=CHARACTER_SCALE_RATIO):
     top, right, bottom, left = face_box
     w, h = right - left, bottom - top
 
@@ -44,7 +45,7 @@ def overlay_character(frame, char_img, face_box, scale=1.5):
         frame[y1:y2, x1:x2] = char_resized[char_y1:char_y2, char_x1:char_x2]
 
 # キャラクター画像の読み込み
-character_dir = 'aipri'
+character_dir = 'boonboon'
 character_images = [
     cv2.imread(os.path.join(character_dir, f), cv2.IMREAD_UNCHANGED)
     for f in sorted(os.listdir(character_dir)) if f.lower().endswith(('.png', '.jpg'))
@@ -60,9 +61,10 @@ if background_frame is None:
     raise Exception("背景画像が読み込めません")
 background_frame = cv2.resize(background_frame, (CAM_RES_WIDTH, CAM_RES_HEIGHT))
 
-# トラッキング辞書: face_id -> (encoding, char_index, last_seen_time)
+# トラッキング辞書: face_id -> (encoding, char_index, last_seen_time, last_box)
 tracked_faces = {}
 ID_TIMEOUT = 3.0  # 秒以内は同一人物とみなす
+DRAW_GRACE = 1.0  # 検出が途切れても最後の位置に描画し続ける猶予（秒）
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FPS, CAM_FPS)
@@ -91,7 +93,7 @@ while True:
 
     # 過去のトラッキングから有効なものを抽出
     valid_tracked_faces = {
-        fid: (enc, char_index) for fid, (enc, char_index, last_seen) in tracked_faces.items()
+        fid: (enc, char_index) for fid, (enc, char_index, last_seen, last_box) in tracked_faces.items()
         if current_time - last_seen <= ID_TIMEOUT
     }
 
@@ -145,7 +147,7 @@ while True:
 
         used_char_indices.add(char_index)
         matches[j] = new_id
-        new_tracked_faces[new_id] = (enc, char_index, current_time)
+        new_tracked_faces[new_id] = (enc, char_index, current_time, None)
 
     # 描画とトラッキング更新
     for j, face_encoding in enumerate(face_encodings):
@@ -157,22 +159,30 @@ while True:
         else:
             continue
 
-        new_tracked_faces[face_id] = (face_encoding, char_index, current_time)
-
         top, right, bottom, left = face_locations[j]
         top *= SCALE_RATIO
         right *= SCALE_RATIO
         bottom *= SCALE_RATIO
         left *= SCALE_RATIO
 
+        new_tracked_faces[face_id] = (face_encoding, char_index, current_time, (top, right, bottom, left))
+
         char_img = character_images[char_index]
-        overlay_character(frame, char_img, (top, right, bottom, left), scale=2.0)
+        overlay_character(frame, char_img, (top, right, bottom, left), scale=CHARACTER_SCALE_RATIO)
 
     # 古いデータを破棄して更新
     tracked_faces = {
         fid: data for fid, data in {**tracked_faces, **new_tracked_faces}.items()
         if current_time - data[2] <= ID_TIMEOUT
     }
+
+    # 今フレームで検出できなかった顔も、猶予時間内なら最後の位置に描画し続ける
+    for fid, (enc, char_index, last_seen, last_box) in tracked_faces.items():
+        if fid in new_tracked_faces or last_box is None:
+            continue
+        if current_time - last_seen <= DRAW_GRACE:
+            char_img = character_images[char_index]
+            overlay_character(frame, char_img, last_box, scale=SCALE_RATIO)
 
     # 背景合成
     if background_frame.shape[2] == 4:
@@ -186,7 +196,7 @@ while True:
 
     cv2.imshow('Tracked Faces with Characters', frame)
 
-    if cv2.waitKey(50) & 0xFF == ord('q'):
+    if cv2.waitKey(30) & 0xFF == ord('q'):
         break
 
 cap.release()
